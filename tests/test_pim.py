@@ -2,39 +2,25 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from test_auth import login_helper, slow_type
 
-# We import the helpers from our auth tests to save time!
-from tests.test_auth import login_helper, slow_type
-
-# We will use a unique name to ensure we can find and delete it later
-TEST_FIRST_NAME = "Automated"
-TEST_LAST_NAME = "User123"
+TEST_FIRST_NAME = "mukera"
+TEST_LAST_NAME = "123"
 
 # --- TC_005: Add Employee ---
 def test_add_employee(driver):
     login_helper(driver, "Admin", "admin123")
     wait = WebDriverWait(driver, 10)
-    
-    # Click PIM
     pim_menu = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "PIM")))
     pim_menu.click()
-    
-    # Click Add Employee
     add_btn = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Add Employee")))
     add_btn.click()
-    
-    # Fill out form
     first_name_input = wait.until(EC.presence_of_element_located((By.NAME, "firstName")))
     last_name_input = driver.find_element(By.NAME, "lastName")
-    
     slow_type(first_name_input, TEST_FIRST_NAME)
     slow_type(last_name_input, TEST_LAST_NAME)
-    
-    # Save
     save_btn = driver.find_element(By.XPATH, "//button[@type='submit']")
     save_btn.click()
-    
-    # Assert Success Toast appears
     toast = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
     assert "Successfully Saved" in toast.text, "Add Employee failed: Success toast not found!"
 
@@ -42,41 +28,24 @@ def test_add_employee(driver):
 def test_search_employee(driver):
     login_helper(driver, "Admin", "admin123")
     wait = WebDriverWait(driver, 10)
-    
-    # Click PIM
     pim_menu = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "PIM")))
     pim_menu.click()
-    
-    # Enter Employee Name in Search
-    # Using a robust XPath to find the input box next to the "Employee Name" label
     name_input = wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='Employee Name']/../following-sibling::div//input")))
     slow_type(name_input, TEST_FIRST_NAME + " " + TEST_LAST_NAME)
-    
-    # OrangeHRM search is notoriously laggy with autocomplete, so we pause for a second
     time.sleep(2) 
-    
     search_btn = driver.find_element(By.XPATH, "//button[@type='submit']")
     search_btn.click()
-    
-    # Assert employee is in the table
-    time.sleep(2) # Wait for table to reload
+    time.sleep(2)
     table_records = driver.find_elements(By.CLASS_NAME, "oxd-table-card")
     assert len(table_records) >= 1, "Search failed: Employee not found in table!"
 
 # --- TC_007: Delete Employee ---
 def test_delete_employee(driver):
-    # To delete an employee, we first search for them using our previous test logic!
     test_search_employee(driver)
     wait = WebDriverWait(driver, 10)
-    
-    # Click the Trash icon on the first record found
     trash_icon = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "bi-trash")))
     trash_icon.click()
-    
-    # Click the red "Yes, Delete" button in the popup modal
     confirm_delete = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Yes, Delete')]")))
     confirm_delete.click()
-    
-    # Assert Success Toast
     toast = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "oxd-toast-content")))
     assert "Successfully Deleted" in toast.text, "Delete Employee failed: Success toast not found!"
